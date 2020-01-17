@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springboottest.mapper.smt.InsertMapper">
+
+<!-- 新增查询时，MES_QUERY记录sql信息-->
+    <insert id="insertQuery" parameterType="com.example.springboottest.po.Query" useGeneratedKeys="true" keyProperty="userqueryid">
+
+        <selectKey resultType="String" keyProperty="userqueryid" order="BEFORE">
+            select mesinterface.MES_QUERY_seq.nextval as userqueryid from dual
+        </selectKey>
+    insert into mesinterface.MES_QUERY (
+        USERQUERYID,
+      DESCRIPTION, NOTES, USERQUERYNAME,
+      RESULTSETSIZELIMIT,  QUERYTEXT ,ENVFLAG,ADDTYPE
+      )
+    values (
+        #{userqueryid},
+      #{description,jdbcType=VARCHAR}, #{notes,jdbcType=VARCHAR}, #{userqueryname,jdbcType=VARCHAR},
+      #{resultsetsizelimit,jdbcType=DECIMAL}, #{querytext,jdbcType=CLOB},#{envflag,jdbcType=VARCHAR},#{addtype,jdbcType=VARCHAR}
+      )
+  </insert>
+    <insert id="insertParameters" parameterType="java.util.List" >
+    insert into mesinterface.MES_QUERY_PARAMETER (
+      USERQUERYID, DEFAULTVALUE,
+      DATATYPE,  PARAMSEQUENCE,USERQUERYPARAMETERNAME,FORMPLACEHOLDER
+      )
+    <foreach close=")" collection="list" item="item" index="index" open ="(" separator="union all">
+        select
+        #{item.userqueryid,jdbcType=VARCHAR}, #{item.defaultvalue,jdbcType=VARCHAR},
+        #{item.datatype,jdbcType=VARCHAR}, #{item.paramsequence,jdbcType=VARCHAR} , #{item.userqueryparametername,jdbcType=VARCHAR},
+        #{item.placeholder,jdbcType=VARCHAR}
+        from dual
+    </foreach>
+
+  </insert>
+
+    <insert id="insertConfigList" >
+        INSERT INTO mesinterface.MES_CONFIGLIST(LISTLABEL,ISQUERY,ACTIVESTATUS,ENVFLAG)
+            VALUES(#{label},'N','1',#{envflag})
+    </insert>
+<!--添加分组下面下挂的查询-->
+    <insert id="insertConfigList_query" parameterType="string">
+            INSERT INTO mesinterface.MES_QUERY_CONFIGLIST(CONFIGLISTID,USERQUERYID)
+            VALUES(#{configlistid},#{userqueryid})
+    </insert>
+
+
+
+
+
+</mapper>

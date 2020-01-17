@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springboottest.mapper.smt.TraceOracleMapper">
+
+    <resultMap id="MachineData" type="com.example.springboottest.po.MachineData">
+        <id column="PANEL" property="panel"/>
+        <id column="PANEL_SEQ" property="panel_seq" />
+        <id column="BARCODE" property="barcode" />
+        <id column="MACHINENAME" property="machinename" />
+        <id column="SIDE" property="Side" />
+        <id column="OPTTIME" property="opttime" />
+        <id column="TESTRESULT" property="TESTRESULT" />
+        <id column="REFERENCEID" property="REFERENCEID" />
+        <id column="FILEPATH" property="FilePath" />
+    </resultMap>
+
+    <resultMap id="FQC" type="com.example.springboottest.po.FQC">
+        <id column="BARCODE" property="barcode"/>
+        <id column="TESTTYPE" property="testtype" />
+        <id column="FQCOPERATOR" property="fqcoperator" />
+        <id column="OQCOPERATOR" property="oqcoperator" />
+        <id column="OPERATETIME" property="operatetime" />
+        <id column="RESULT" property="result" />
+        <id column="DEFECT" property="defect" />
+        <id column="DEFECTCATEGORY" property="defectcategory" />
+        <id column="MACHINENAME" property="machinename" />
+    </resultMap>
+    <!-- 查询名称列表查询-->
+    <select id="queryLotHistory" resultType="java.util.LinkedHashMap">
+       select rownum as row_id,s.* from
+        (select  v.* from MFLEX_LOT_HISTORY_V v where pcslot = #{barcode} ) s
+        order by s.txndate
+    </select>
+
+    <select id="queryLot_Mat" resultType="java.util.LinkedHashMap">
+        SELECT
+            workorder,
+            order_type,
+            lot,
+            product,
+            operation,
+            issuetype,
+            mat_lot,
+            mat_product_desc,
+            mat_product,
+            qty,
+            mat_mpn      m_vendorpart,
+            '' m_datecode,
+            mat_vendor   vendorname,
+            issue_reason,
+            to_char(txndate, 'yyyy-mm-dd hh24:mi:ss') txndate
+FROM
+    mflex_componentissue_new v
+WHERE
+    lot IN (
+        SELECT
+            containername
+        FROM
+            container c
+        START WITH
+            containername = #{barcode}
+        CONNECT BY
+            containerid = PRIOR splitfromid
+    )
+    </select>
+
+    <select id="queryLotByMat" resultType="java.util.LinkedHashMap">
+        select mat_lot MATERIALLOT,WORKORDER MFGORDERNAME,lot Panel,pieceseq,
+         panelseq,barcode,product MFGORDERPRODUCT,mat_product MATERIALPRODUCT,
+         qty PANELCOSTQTY, MAT_PRODUCT_DESC,OPERATION,'' CONTAINER
+         from MFLEX_COMPONENTISSUE_NEW_1 c where c.mat_lot=#{barcode}
+    </select>
+
+    <select id="queryMICLED" resultType="java.util.LinkedHashMap">
+        select * from(
+         select bl.parentpanel_id PARENTPANEL,bl.panel_id PANEL,bl.BarCode,ml.MicType,ml.MIC_BarCode,bl.MIC_BarCode_2 ReplaceFlag,
+           bl.Status,bl.BarCode_Seq Position,bl.FLEX_LOT,to_char(ml.opttime, 'yyyy-mm-dd hh24:mi:ss') LinkTime,
+           to_char(bl.print_time, 'yyyy-mm-dd hh24:mi:ss') PrintTime
+         from mesinterface.m_labelprint_barcode_list bl
+         left join mesinterface.m_micbarcode_link ml on bl.Panel_id = ml.Panel_id and bl.BarCode_Seq = ml.Seq
+         where bl.Panel_id = #{barcode} or bl.barCode = #{barcode}
+         union
+         select null as PARENTPANEL,null as PANEL,ml.Pcs_BarCode,ml.MicType,ml.MIC_BarCode,null as ReplaceFlag,
+           null as Status,null as Position,null as FLEX_LOT,to_char(ml.opttime, 'yyyy-mm-dd hh24:mi:ss') LinkTime,null as PrintTime
+         from mesinterface.m_micbarcode_link ml
+         where nvl(ml.Panel_id,'1') = '1' and ml.Pcs_BarCode = #{barcode}
+       ) order by MICTYPE nulls last ,Position,LinkTime
+    </select>
+
+    <select id="queryPanelInfo" resultType="java.util.LinkedHashMap">
+        select Panel_Id,bl.BarCode_Seq,bl.ParentPanel_Id,
+        case when nvl(p.M_PanelMinPcsQty,0)&lt;1 then bl.BarCode_Seq
+        else decode(mod(bl.BarCode_Seq,p.M_PanelMinPcsQty),0,p.M_PanelMinPcsQty,mod(bl.BarCode_Seq,p.M_PanelMinPcsQty))
+        end as BarCode_Seq2
+        from mesinterface.M_LabelPrint_BarCode_List bl
+        inner join meswipsmt.Container c on c.ContainerName = bl.BarCode
+        inner join meswipsmt.Product p on c.ProductId = p.ProductId
+        where bl.BarCode = #{barcode}
+    </select>
+
+    <select id="queryXray_2" resultType="java.util.LinkedHashMap">
+        select b.Panel_Id PanelId,b.BarCode_Seq Position,b.BarCode as PcsId,a.TestType,'default resource' as ResourceName,
+    to_char(a.OptTime,'yyyy-MM-dd hh24:mi:ss') OptTime,a.Operator,a.ManualResult as TestResult,null as VerifyResult,
+    null as VerifyTime, null as VerifyOperator,null as ImagePath
+        from mesinterface.M_MachineResult_Whitelist a
+         left join mesinterface.M_LabelPrint_BarCode_List b on b.Panel_Id = a.PanelId and b.BarCode_Seq = a.Position
+         where b.BarCode = #{barcode}
+         UNION
+         select b.Panel_Id PanelId,b.BarCode_Seq Position,b.BarCode as PcsId,a.TestType,'default resource' as ResourceName,
+         to_char(a.OptTime,'yyyy-MM-dd hh24:mi:ss') OptTime,a.Operator,a.ManualResult as TestResult,
+         null as VerifyResult,null as VerifyTime, null as VerifyOperator,null as ImagePath
+         from mesinterface.M_MachineResult_Whitelist a
+         left join mesinterface.M_LabelPrint_BarCode_List b on b.BarCode = a.BarCode
+         where b.BarCode = #{barcode}
+         UNION
+         select b.Panel_Id PanelId,b.BarCode_Seq Position,b.BarCode as PcsId,a.TestType,'default resource' as ResourceName,
+         to_char(a.OptTime,'yyyy-MM-dd hh24:mi:ss') OptTime,a.Operator,a.ManualResult as TestResult,
+         null as VerifyResult,null as VerifyTime, null as VerifyOperator,null as ImagePath
+         from mesinterface.M_MachineResult_Whitelist a
+         left join mesinterface.M_LabelPrint_BarCode_List b on b.Panel_Id = a.PanelId and b.BarCode_Seq = a.Position
+         where b.Panel_Id = #{barcode}
+    </select>
+
+    <select id="queryImageServerPath" resultType="java.util.LinkedHashMap">
+         select d.line,d.mname,s.servername,s.productionip,s.mesip,
+         s.username,s.pwd,       s.sharefilename, rf.resourcefamilyname, dd.resourcename
+            from mesinterface.m_machine_config_xray d
+             inner join mesinterface.m_machine_config_xray_map s   on s.line = d.line   and d.testserver = 'Y'
+             inner join meswipsmt.resourcedef dd  on dd.resourcename=d.mname
+           inner join meswipsmt.resourcefamily rf on rf.resourcefamilyid = dd.resourcefamilyid
+    </select>
+    
+    <select id="queryMachineData" resultMap="MachineData">
+        select t.panel,t.panel_seq,t.barcode,t.machinename,t.Machine,t.Side,t.opttime,t.TESTRESULT,t.REFERENCEID,wm_concat(replace(filepath,'\','@')) as FilePath
+            from
+            (
+                   select
+                      distinct mmdc.panel,mmdc.panel_seq,mlbl.barcode,machine machinename,substr(mmdc.MACHINE,5,3) Machine,
+                      substr(mmdc.MACHINE,length(mmdc.MACHINE),1) Side,to_char(mmdc.opttime,'yyyymmdd hh24:mi:ss') opttime,
+                      decode(mlbl.status,'OK',mmdc.TESTRESULT,'FAIL') TESTRESULT,mmdc.REFERENCEID,dd.IMAGEPATH as FilePath
+                   from
+                      mesinterface.M_MACHINE_TESTDATA_COLLECTION mmdc
+                      inner join mesinterface.m_labelprint_barcode_list mlbl on mlbl.panel_id||mlbl.barcode_seq=mmdc.BARCODE
+                      LEFT JOIN MESSMTEAP.EAP_DEFECT_DETAILS dd ON dd.PANEL=mmdc.PANEL AND dd.SEQUENCE=mmdc.PANEL_SEQ
+                                                                    AND dd.PCBSIDE=mmdc.SIDE AND upper(mmdc.machine)=upper(dd.Resourcename||'_'||dd.pcbside)
+                    where (mlbl.barcode = #{barcode} or mmdc.panel=#{barcode})
+                      and mmdc.panel=mlbl.panel_id
+                      and opttime=(
+                        select max(opttime)
+                        from mesinterface.M_MACHINE_TESTDATA_COLLECTION md
+                        where substr(md.MACHINE,5,3)=substr(mmdc.MACHINE,5,3)
+                          and md.barcode=mmdc.barcode and substr(md.MACHINE,length(mmdc.MACHINE),1)=substr(mmdc.MACHINE,length(mmdc.MACHINE),1)
+                       )
+                   union all
+                   select
+                      distinct mmdc.panel,mmdc.panel_seq,mmdc.barcode,machine machinename,substr(mmdc.MACHINE,5,3) Machine,
+                      substr(mmdc.MACHINE,length(mmdc.MACHINE),1) Side,to_char(mmdc.opttime,'yyyymmdd hh24:mi:ss') opttime,
+                      mmdc.TESTRESULT,mmdc.REFERENCEID,dd.IMAGEPATH as FilePath
+                   from
+                      mesinterface.M_MACHINE_TESTDATA_COLLECTION mmdc
+                      LEFT JOIN MESSMTEAP.EAP_DEFECT_DETAILS dd ON dd.PANEL=mmdc.PANEL AND dd.SEQUENCE=mmdc.PANEL_SEQ
+                                                                    AND dd.PCBSIDE=mmdc.SIDE
+                                                                    and upper(mmdc.machine)=upper(dd.Resourcename||'_'||dd.pcbside)
+                   where
+                    mmdc.panel= #{barcode}
+                    and not exists (select 1 from mesinterface.m_labelprint_barcode_list mlbl where mlbl.panel_id=mmdc.panel)
+                    and opttime=(
+                      select max(opttime)
+                      from mesinterface.M_MACHINE_TESTDATA_COLLECTION md
+                      where substr(md.MACHINE,5,3)=substr(mmdc.MACHINE,5,3)
+                      and md.barcode=mmdc.barcode and substr(md.MACHINE,length(mmdc.MACHINE),1)=substr(mmdc.MACHINE,length(mmdc.MACHINE),1)
+                   )
+            ) t
+            group by t.panel,t.panel_seq,t.barcode,t.machinename,t.Machine,t.Side,t.opttime,t.TESTRESULT,t.REFERENCEID
+            order by substr(t.MACHINE,length(t.MACHINE),1),t.opttime,to_number(t.panel_seq) ASC
+    </select>
+
+    <select id="queryFQC" resultMap="FQC">
+
+   select Barcode,FQCItem as TestType, Employee as FqcOperator,'' as OQCOperator,to_char(opttime,'yyyy-mm-dd hh24:mi:ss') OperateTime,
+    RESULT as Result,replace(defect,chr(10),'') as Defect,replace(defectcategory,chr(10),'') as DefectCategory,mac as MachineName
+  from mesinterface.M_FQC_DEFECT2 where barcode=#{barcode}
+    </select>
+
+    <select id="queryWorkArea" resultType="string">
+        select  m1.workareaname
+        from meswipsmt.container c
+        inner join meswipsmt.currentstatus cs on cs.currentstatusid = c.currentstatusid
+        inner join meswipsmt.workflowstep wfs on cs.workflowstepid = wfs.workflowstepid
+        inner join meswipsmt.workflow wf on wf.workflowid=wfs.workflowid
+        inner join meswipsmt.workflowstep wfs2 on wfs2.workflowid=wf.workflowid
+        inner join meswipsmt.spec s1 on s1.specid=wfs2.specid
+        inner join meswipsmt.m_workarea m1 on m1.workareaid=s1.m_workareaid
+        where c.containername = #{barcode} and wfs2.sequence&lt;=wfs.sequence order by wfs2.sequence asc
+    </select>
+    
+    <select id="queryTestResult" resultType="java.util.LinkedHashMap">
+         select distinct (case when mmdc.badmark is null then TESTRESULT when mmdc.badmark='PASS' then TESTRESULT else 'FAIL' end) TResult,mmdc.panel_seq
+             from mesinterface.M_MACHINE_TESTDATA_COLLECTION mmdc
+             where (mmdc.panel = #{barcode} or mmdc.barcode=#{barcode_seq})
+             and substr(mmdc.MACHINE,5,3) =#{type}
+             and substr(mmdc.MACHINE,length(mmdc.MACHINE),1) =#{side}
+             and opttime=(select max(opttime)
+             from mesinterface.M_MACHINE_TESTDATA_COLLECTION md
+             where substr(md.MACHINE,5,3)=substr(mmdc.MACHINE,5,3)
+             and md.panel=mmdc.panel
+             and substr(md.MACHINE,length(md.MACHINE),1)=substr(mmdc.MACHINE,length(mmdc.MACHINE),1)
+             ) order by to_number(mmdc.PANEL_SEQ) asc
+    </select>
+    
+    <select id="queryPack" resultType="java.util.LinkedHashMap">
+          SELECT DISTINCT pcs.containername AS pcslot,
+          panel.containername AS panellot,
+          lot.containername AS lot,
+          pkg.containername AS packid,
+          to_char(pkt.txndate,'yyyy-mm-dd hh24:mi:ss') packDate,
+          h.boxnumber ,
+          s.shippinglot,
+          s.sumbittime AS shippingtime
+          FROM mesinterface.m_labelprint_barcode_list t
+          JOIN meswipsmt.container pcs ON t.barcode=pcs.containername
+          JOIN meswipsmt.container panel ON pcs.splitfromid = panel.containerid
+          JOIN meswipsmt.container lot ON panel.splitfromid = lot.containerid
+          JOIN meswipsmt.container pkg ON pcs.parentCONTAINERID = pkg.containerid
+          JOIN meswipsmt.M_SMTPACKINGHISTORY pkt ON pkg.containerid=pkt.packid
+          JOIN WX_INVOPERRATION_HISTORY@WMSDB.MFLEX.COM.CN h ON pkg.containername=h.package_id
+          JOIN m_shippinglotlinkboxid@WMSDB.MFLEX.COM.CN s on s.boxid = h.boxnumber
+
+           WHERE h.boxnumber= #{barcode}
+           OR pcs.containername= #{barcode}
+           OR panel.containername = #{barcode}
+           OR lot.containername= #{barcode}
+           or s.shippinglot=#{barcode}
+    </select>
+</mapper>

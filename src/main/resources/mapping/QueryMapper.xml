@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springboottest.mapper.smt.QueryMapper">
+
+    <resultMap id="procedureRes" type="java.util.LinkedHashMap">
+    </resultMap>
+
+    <select id="queryRoles" resultType="string">
+        select roles from mesinterface.mes_query_userroles where employeeId =#{employeeId}
+    </select>
+
+
+
+
+
+    <select id="bi_anaysis" resultType="com.example.springboottest.dto.analysis">
+        select a.queryname,a.envflag,a.flag,
+            count(1) as qty from
+            (select bi.queryname,
+            to_char(bi.requesttime,'yyyy-mm-dd') time,
+            bi.envflag,
+            bi.page,
+            bi.limit,
+            case when
+            bi.limit  in ('10','20','50') then 'query'
+            else 'download'  end as flag
+            from mesinterface.bi_report_log bi where bi.requesttime>sysdate-30) a
+            group by a.queryname,a.envflag,a.flag
+
+            order by qty desc,queryname
+    </select>
+
+    <select id="queryQueryId" resultType="string">
+        select userqueryid from mesinterface.mes_query where userqueryname like #{queryname}
+    </select>
+
+    <!-- 查询名称列表查询-->
+    <select id="queryQueryList" resultType="com.example.springboottest.po.Query">
+        select userqueryid,
+        userqueryname,
+        querytext,
+        description,
+        notes,
+        resultsetsizelimit,
+        envflag
+        from mesinterface.mes_query where activestatus = #{flag}
+    </select>
+
+    <!-- 查询名指定分组下的未挂的查询-->
+    <select id="queryQueryList_addconfig" resultType="com.example.springboottest.po.Query">
+        select userqueryid,
+        userqueryname,
+        querytext,
+        description,
+        notes,
+        resultsetsizelimit
+        from mesinterface.mes_query where activestatus = '1'
+        and userqueryid not in (SELECT userqueryid FROM mesinterface.MES_QUERY_CONFIGLIST
+        WHERE CONFIGLISTID= #{configlist} )
+        and envflag = #{envflag}
+    </select>
+
+    <!-- 查询名称查询Form-->
+    <select id="queryFormByName" resultType="java.util.Map">
+     select USERQUERYPARAMETERNAME AS label,FORMPLACEHOLDER AS placeholder,USERQUERYPARAMETERNAME AS key,
+            CASE
+            WHEN DATATYPE='string' then 'input'
+            WHEN DATATYPE='date' then 'date'
+            end as type,
+            defaultvalue
+            from mesinterface.MES_QUERY_PARAMETER
+            where userqueryid =
+            (select userqueryid from mesinterface.mes_query
+            where userqueryname like #{queryname})
+    </select>
+
+<!-- 查询sql文本 -->
+    <select id="querySql" resultType="String">
+        SELECT Querytext FROM mesinterface.MES_QUERY
+                WHERE Userqueryname=#{queryname}
+    </select>
+<!--查询所有的查询列表，用来update-->
+    <select id="queryForUpdate" resultType="com.example.springboottest.po.Query">
+        select * from mesinterface.mes_query
+            order by instr('[SMT],[FLEX],[SQLSERVER]','['||envflag||']'),USERQUERYNAME
+    </select>
+
+    <select id="queryForUpdate_params" resultType="com.example.springboottest.po.QueryParamters">
+        SELECT userqueryparameterid,
+         p.userqueryid,
+         p.userqueryparametername,
+         p.datatype,
+         p.changecount,
+         p.paramsequence,
+         p.defaultvalue,
+         p.formlabel AS LABEL,
+         p.formplaceholder as placeholder,
+         p.formkey AS KEY
+         FROM mesinterface.MES_QUERY_PARAMETER p
+            LEFT JOIN mesinterface.mes_query q ON p.userqueryid=q.userqueryid
+            WHERE q.userqueryname= #{queryname}
+    </select>
+
+    <!--  根据sql文本查询数据 -->
+    <select id="useQuery"  parameterType="map"  resultType="java.util.LinkedHashMap">
+        <![CDATA[
+            (${sql})
+        ]]>
+    </select>
+
+    <select id="queryConfigList" resultType="java.util.LinkedHashMap">
+         SELECT listlabel AS LABEL,CONFIGLISTID,ENVFLAG FROM mesinterface.MES_CONFIGLIST WHERE activestatus='1' AND isquery='N'
+         order by listlabel asc
+    </select>
+
+    <select id="queryConfigList_query" resultType="com.example.springboottest.po.Query">
+        select userqueryid,
+                userqueryname,
+                querytext,
+                description,
+                notes,
+                resultsetsizelimit,
+                envflag
+                from mesinterface.mes_query where activestatus = '1'
+        AND   userqueryid IN(
+            SELECT userqueryid FROM mesinterface.MES_QUERY_CONFIGLIST WHERE CONFIGLISTID=#{configlistid})
+    </select>
+
+    <select id="queryByProcedure" statementType="CALLABLE" parameterType="map">
+        <![CDATA[{call ${pro}(
+        ${params}
+        #{res,mode=OUT,jdbcType=CURSOR,resultMap=procedureRes}
+        )}
+        ]]>
+    </select>
+
+
+
+
+
+
+</mapper>

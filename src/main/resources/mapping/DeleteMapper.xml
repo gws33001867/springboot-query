@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springboottest.mapper.smt.DeleteMapper">
+
+<!--删除分组-->
+   <delete id="deleteConfigList" >
+    {call
+        declare
+        begin
+            delete from mesinterface.MES_CONFIGLIST where CONFIGLISTID = #{configlistid};
+            delete from mesinterface.MES_QUERY_CONFIGLIST where CONFIGLISTID = #{configlistid};
+        end
+    }
+   </delete>
+<!-- 移除分组下挂查询-->
+    <delete id="deleteConfigList_query">
+        delete from mesinterface.MES_QUERY_CONFIGLIST where CONFIGLISTID = #{configlistid}
+        and userqueryid in
+        (
+        select userqueryid from mesinterface.MES_QUERY where userqueryname in
+            <foreach item="item" collection="lists" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        )
+    </delete>
+
+    <delete id="deletequery">
+     {call
+        declare
+        begin
+            delete from mesinterface.MES_QUERY where userqueryid = #{userqueryid};
+            delete from mesinterface.MES_QUERY_PARAMETER where userqueryid = #{userqueryid};
+            delete from mesinterface.MES_QUERY_CONFIGLIST where userqueryid = #{userqueryid};
+        end
+    }
+    </delete>
+
+    <delete id="deleteQueryParameters" parameterType="string">
+         delete from mesinterface.MES_QUERY_PARAMETER where userqueryid = #{userqueryid}
+    </delete>
+
+
+</mapper>

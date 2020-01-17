@@ -1,0 +1,55 @@
+server:
+  port: 8889
+
+spring:
+  datasource:
+    master:
+      username: MESWIPSMT
+      password: insite2013
+      jdbc-url: jdbc:oracle:thin:@wippd-cluster.mflex.com.cn:1521/MESWIPPD.MFLEX.COM.CN
+      ConnectionTestQuery: select 1 from product
+      hikari:
+        driver-class-name: oracle.jdbc.driver.OracleDriver
+    other:
+      jdbc-url: jdbc:sqlserver://MFCETN03;database=VEN
+      username: applen18
+      password: applen18@2009
+      hikari:
+        driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    flexwip:
+      jdbc-url: jdbc:oracle:thin:@flxwippd-cluster.mflex.com.cn:1521/FLXWIPPD.MFLEX.COM.CN
+      username: MESWIPFLX
+      password: oracle
+      hikari:
+        driver-class-name: oracle.jdbc.driver.OracleDriver
+  mvc:
+    #静态页面映射访问路径
+    static-path-pattern: /**
+    view:
+      prefix: /
+      suffix: .html
+  resources:
+    #静态页面所在目录
+    static-locations: classpath:/static/
+mybatis:
+  mapper-locations: classpath:mapping/*Mapper.xml
+  type-aliases-package: com.example.springboottest.po
+redis:
+  database: 0
+  host: 127.0.0.1
+  port: 6379
+  timeout: 3000
+
+#pagehelper分页插件
+#pagehelper:
+#  helperDialect: oracle
+#  reasonable: true
+#  supportMethodsArguments: true
+#  params: count=countSql
+#showSql
+logging:
+  level:
+    com:
+      example:
+        springboottest:
+          mapper: debug

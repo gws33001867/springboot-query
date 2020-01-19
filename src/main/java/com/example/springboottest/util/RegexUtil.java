@@ -10,8 +10,7 @@ public class RegexUtil {
         for(int i=0;i<params.size();i++){
             String pattern_old = "\\?(?i)\\s*"+params.get(i).getKey();
             String pattern_new ="'"+params.get(i).getVal()+"'";
-            System.out.println(pattern_old);
-            System.out.println(pattern_new);
+
 
             sql_origin=sql_origin.replaceAll(pattern_old,pattern_new);
         }
@@ -26,8 +25,7 @@ public class RegexUtil {
         for(int i=0;i<params.size();i++){
             String pattern_old = "\\?(?i)\\s*"+params.get(i).getKey();
             String pattern_new ="'"+params.get(i).getVal()+"'";
-            System.out.println(pattern_old);
-            System.out.println(pattern_new);
+
 
             sql_origin=sql_origin.replaceAll(pattern_old,pattern_new);
         }

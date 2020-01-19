@@ -17,7 +17,7 @@ public class RegexUtil {
         }
         sql_origin = sql_origin.replaceAll(";"," ");
 
-        System.out.println(sql_origin);
+       // System.out.println(sql_origin);
         return sql_origin;
     }
 
@@ -33,7 +33,7 @@ public class RegexUtil {
         }
         sql_origin = sql_origin.replaceAll(";"," ");
 
-        System.out.println(sql_origin);
+        //System.out.println(sql_origin);
         return sql_origin;
     }
 }

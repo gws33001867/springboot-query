@@ -158,7 +158,7 @@ public class QueryController {
         ResultInfo result = new ResultInfo();
 
         List<String> list =  queryService.queryRoles(employeeId);
-        System.out.println(list);
+
         result.setCode(200);
         result.setResult(list);
 

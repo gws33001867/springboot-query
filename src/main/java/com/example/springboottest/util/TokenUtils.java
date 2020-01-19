@@ -9,7 +9,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 public class TokenUtils {
     public static final long EXPIRE_TIME=15*60*1000;
 
-    private static final String TOKEN_SECRET = "mflexisveryhardmode";
+    private static final String TOKEN_SECRET = "mflexisveryhardmode1";
 
     public static boolean verify(String token){
         try{

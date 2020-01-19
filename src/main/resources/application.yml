@@ -48,8 +48,4 @@ redis:
 #  params: count=countSql
 #showSql
 logging:
-  level:
-    com:
-      example:
-        springboottest:
-          mapper: debug
+  file: my.log

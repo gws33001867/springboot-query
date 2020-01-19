@@ -47,32 +47,22 @@ public class WebLogAspect {
 
         HttpServletRequest request = attributes.getRequest();
         //记录下请求内容
-        LOG.info("请求地址:" + request.getRequestURL().toString());
-        LOG.info("HTTP METHOD:" + request.getMethod());
-        LOG.info("IP:" + request.getRemoteAddr());
-        LOG.info("主机:" + request.getRemoteHost());
-        LOG.info("参数："+ Arrays.toString(joinPoint.getArgs()));
+//        LOG.info("请求地址:" + request.getRequestURL().toString());
+//        LOG.info("HTTP METHOD:" + request.getMethod());
+//        LOG.info("IP:" + request.getRemoteAddr());
+//        LOG.info("主机:" + request.getRemoteHost());
+//        LOG.info("参数："+ Arrays.toString(joinPoint.getArgs()));
 
         logInfo.setIp(request.getRemoteAddr());
         logInfo.setParams(Arrays.toString(joinPoint.getArgs()));
         logInfo.setNotes("请求地址:" + request.getRequestURL().toString());
 
-//        Object[] args = joinPoint.getArgs();
-//        ParameterNameDiscoverer pnd = new DefaultParameterNameDiscoverer();
-//        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-//        Method method = signature.getMethod();
-//        String[] parameterNames = pnd.getParameterNames(method);
-//        Map<String, Object> paramMap = new HashMap<>(32);
-//        for (int i = 0; i < parameterNames.length; i++) {
-//            paramMap.put(parameterNames[i], args[i]);
-//        }
-//        System.out.println("paramMap:"+paramMap);
     }
 
     @AfterReturning(returning = "ret",pointcut = "logPointCut()")
     public void doAfterReturning(Object ret) throws Throwable{
         //处理完请求，返回内容
-        LOG.info("返回值："+ret);
+//        LOG.info("返回值："+ret);
     }
 
     @Around("logPointCut()")
@@ -80,7 +70,7 @@ public class WebLogAspect {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         long startTime = System.currentTimeMillis();
         Object ob = pjp.proceed();
-        LOG.info("耗时："+(System.currentTimeMillis()-startTime));
+//        LOG.info("耗时："+(System.currentTimeMillis()-startTime));
         logInfo.setRequesttime(df.format(new Date()));
         logInfo.setRequestproject("BI Report");
         logInfo.setUsername("BI Report");

@@ -46,7 +46,6 @@ public class QueryService {
 
         String queryid = queryMapper.queryQueryId(queryname);
 
-        System.out.println(queryid);
 
         List<Map<String,String>> lists= queryMapper.queryFormByName(queryname);
 
@@ -126,7 +125,7 @@ public class QueryService {
 
        // PageHelper.startPage(page,limit);
 
-        System.out.println("page:"+page+"limit:"+limit+"sql:"+sql+"envflag:"+envflag);
+
         Map map = new HashMap();
 
         map.put("sql",sql);
@@ -144,7 +143,7 @@ public class QueryService {
         }else{
             lists=null;
         }
-        System.out.println("list:"+lists);
+
 
         PageInfo<LinkedHashMap<String,String>> pageInfo = new PageInfo<LinkedHashMap<String,String>>(lists);
 
